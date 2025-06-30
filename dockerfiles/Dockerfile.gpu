@@ -48,7 +48,7 @@ RUN python -m pip install -r /tmp/requirements.txt
 
 # Build and install FastDeploy
 RUN cd FastDeploy && \
-    bash build.sh 1 python false [80,90] && \
+    bash build.sh 1 python false [89] && \
     python -m pip install --no-cache-dir dist/* && \
     rm -rf /workspace/FastDeploy/build /workspace/FastDeploy/dist
 
