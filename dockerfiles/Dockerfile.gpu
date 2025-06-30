@@ -26,3 +26,10 @@ RUN cd FastDeploy && bash build.sh 1 python false [80,90] && python -m pip insta
 ENV http_proxy=""
 ENV https_proxy=""
 ENV no_proxy=""
+
+# Add entrypoint script
+COPY entrypoint.sh /workspace/entrypoint.sh
+RUN chmod +x /workspace/entrypoint.sh
+
+WORKDIR /workspace
+ENTRYPOINT ["/workspace/entrypoint.sh"]

@@ -162,3 +162,6 @@ custom_ops/tmp*
 build
 
 .ccls-cache
+
+# Claude artifacts
+.claude/
