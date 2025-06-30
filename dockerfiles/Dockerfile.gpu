@@ -1,33 +1,58 @@
-FROM ccr-2vdh3abv-pub.cnc.bj.baidubce.com/paddlepaddle/fastdeploy-cuda-12.6:2.0.0
+# Use NVIDIA base image as fallback if Baidu registry is not accessible
+# FROM ccr-2vdh3abv-pub.cnc.bj.baidubce.com/paddlepaddle/fastdeploy-cuda-12.6:2.0.0
+FROM nvidia/cuda:12.6.0-devel-ubuntu22.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 
+# Install Python and system dependencies
+RUN apt-get update && apt-get install -y \
+    python3.10 \
+    python3.10-dev \
+    python3-pip \
+    git \
+    wget \
+    curl \
+    build-essential \
+    cmake \
+    libblas-dev \
+    liblapack-dev \
+    libopenmpi-dev \
+    libibverbs-dev \
+    librdmacm-dev \
+    ffmpeg \
+    libsm6 \
+    libxext6 \
+    libgomp1 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set Python 3.10 as default
+RUN update-alternatives --install /usr/bin/python python /usr/bin/python3.10 1 && \
+    update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.10 1
+
+# Upgrade pip
+RUN python -m pip install --upgrade pip setuptools wheel
+
 WORKDIR /workspace
-RUN rm -rf /workspace/FastDeploy
 COPY . /workspace/FastDeploy
 
-RUN echo "ulimit -u unlimited" >> /root/.bashrc
-RUN echo "ulimit -n 65536" >> /root/.bashrc
+# Set ulimits
+RUN echo "ulimit -u unlimited" >> /root/.bashrc && \
+    echo "ulimit -n 65536" >> /root/.bashrc
 
-# setting proxy
-ARG http_proxy=agent.baidu.com:8891
-ARG https_proxy=agent.baidu.com:8891
-ARG no_proxy=localhost,bj.bcebos.com,su.bcebos.com,pypi.tuna.tsinghua.edu.cn,paddle-ci.gz.bcebos.com
-
-# uninstall existing package
-RUN python -m pip uninstall paddlepaddle-gpu fastdeploy-gpu -y
-
-# install paddlepaddle
+# Install paddlepaddle-gpu
 RUN python -m pip install paddlepaddle-gpu==3.1.0 -i https://www.paddlepaddle.org.cn/packages/stable/cu126/
 
-# build and install FastDeploy
-RUN cd FastDeploy && bash build.sh 1 python false [80,90] && python -m pip install --no-cache-dir dist/* && rm -rf /workspace/FastDeploy
+# Install Python dependencies
+COPY requirements.txt /tmp/requirements.txt
+RUN python -m pip install -r /tmp/requirements.txt
 
-ENV http_proxy=""
-ENV https_proxy=""
-ENV no_proxy=""
+# Build and install FastDeploy
+RUN cd FastDeploy && \
+    bash build.sh 1 python false [80,90] && \
+    python -m pip install --no-cache-dir dist/* && \
+    rm -rf /workspace/FastDeploy/build /workspace/FastDeploy/dist
 
-# Add entrypoint script
+# Copy entrypoint script
 COPY entrypoint.sh /workspace/entrypoint.sh
 RUN chmod +x /workspace/entrypoint.sh
 
