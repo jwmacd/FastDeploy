@@ -35,8 +35,9 @@ RUN apt-get update && apt-get install -y \
 RUN update-alternatives --install /usr/bin/python python /usr/bin/python3.10 1 && \
     update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.10 1
 
-# Upgrade pip
-RUN python -m pip install --upgrade pip setuptools wheel
+# Upgrade pip with specific setuptools version constraint
+RUN python -m pip install --upgrade pip && \
+    python -m pip install "setuptools>=62.3.0,<80.0" wheel
 
 WORKDIR /workspace
 COPY . /workspace/FastDeploy
@@ -52,6 +53,13 @@ RUN python -m pip install paddlepaddle-gpu==3.1.0 -i https://www.paddlepaddle.or
 COPY requirements.txt /tmp/requirements.txt
 RUN python -m pip install -r /tmp/requirements.txt
 
+# Pre-clone third-party dependencies to avoid network issues during build
+RUN cd /tmp && \
+    git clone -b v3.8.0 --single-branch https://github.com/NVIDIA/cutlass.git && \
+    git clone -b main --single-branch https://github.com/deepseek-ai/DeepGEMM.git && \
+    cd DeepGEMM && git reset --hard 95e81b3dd6704e279e5f4757c5b94776ac988a8d && cd .. && \
+    git clone -b v3.11.3 --single-branch https://github.com/nlohmann/json.git nlohmann_json
+
 # Build and install FastDeploy
 # Note: The build process imports PaddlePaddle which tries to initialize CUDA and looks for libcuda.so.1
 # This library comes from the host NVIDIA driver and isn't available during Docker build
@@ -62,10 +70,21 @@ ENV LD_LIBRARY_PATH=/usr/local/cuda/lib64/stubs:${LD_LIBRARY_PATH}
 
 RUN ln -s /usr/local/cuda/lib64/stubs/libcuda.so /usr/local/cuda/lib64/stubs/libcuda.so.1 && \
     cd FastDeploy && \
+    # Copy pre-cloned third-party dependencies to avoid git clone during build
+    mkdir -p custom_ops/third_party && \
+    cp -r /tmp/cutlass custom_ops/third_party/ && \
+    cp -r /tmp/DeepGEMM custom_ops/third_party/ && \
+    cp -r /tmp/nlohmann_json custom_ops/third_party/ && \
+    # Apply DeepGEMM patch
+    cd custom_ops/third_party/DeepGEMM && \
+    cp /workspace/FastDeploy/custom_ops/0001-DeepGEMM-95e81b3.patch . && \
+    git apply 0001-DeepGEMM-95e81b3.patch && \
+    cd /workspace/FastDeploy && \
     # 89 refers to SM_89 (compute capability 8.9) for the target GPUs
     bash build.sh 1 python false "[89]" && \
     python -m pip install --no-cache-dir dist/* && \
-    rm -rf /workspace/FastDeploy/build /workspace/FastDeploy/dist && \
+    rm -rf /workspace/FastDeploy/build /workspace/FastDeploy/dist /workspace/FastDeploy/custom_ops/third_party && \
+    rm -rf /tmp/cutlass /tmp/DeepGEMM /tmp/nlohmann_json && \
     # Clean up the stub symlink after build
     rm /usr/local/cuda/lib64/stubs/libcuda.so.1
 
