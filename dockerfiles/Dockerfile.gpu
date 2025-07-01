@@ -54,7 +54,7 @@ RUN ln -s /usr/local/cuda/lib64/stubs/libcuda.so /usr/local/cuda/lib64/stubs/lib
     export LD_LIBRARY_PATH=/usr/local/cuda/lib64/stubs:${LD_LIBRARY_PATH} && \
     cd FastDeploy && \
     # 89 refers to SM_89 (compute capability 8.9) for the target GPUs
-    bash build.sh 1 python false 89 && \
+    bash build.sh 1 python false "[89]" && \
     python -m pip install --no-cache-dir dist/* && \
     rm -rf /workspace/FastDeploy/build /workspace/FastDeploy/dist && \
     # Clean up the stub symlink after build
