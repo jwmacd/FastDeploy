@@ -10,7 +10,8 @@ NEVER BUILD THIS IN THE LOCAL ENVIRONMENT
 
 When you make changes to fix build issues:
 - Commit your changes to the repository
-- The automated git-builder container will detect changes and attempt to rebuild
+- Push changes to the remote repository: `git push`
+- The automated git-builder container pulls from remote and will detect changes
 - Monitor the build logs with: `docker logs git-builder`
 - Do NOT run build commands locally, including:
   - `bash build.sh` 
