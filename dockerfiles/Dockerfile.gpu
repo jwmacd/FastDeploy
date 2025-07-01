@@ -4,7 +4,12 @@ FROM nvidia/cuda:12.6.0-devel-ubuntu22.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Install Python and system dependencies
+# Add NVIDIA package repository for cuDNN
+RUN wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-keyring_1.1-1_all.deb && \
+    dpkg -i cuda-keyring_1.1-1_all.deb && \
+    rm cuda-keyring_1.1-1_all.deb
+
+# Install Python and system dependencies including cuDNN development headers
 RUN apt-get update && apt-get install -y \
     python3.10 \
     python3.10-dev \
@@ -23,6 +28,7 @@ RUN apt-get update && apt-get install -y \
     libsm6 \
     libxext6 \
     libgomp1 \
+    libcudnn9-dev-cuda-12 \
     && rm -rf /var/lib/apt/lists/*
 
 # Set Python 3.10 as default
