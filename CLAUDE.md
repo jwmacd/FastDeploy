@@ -4,6 +4,22 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 NEVER BUILD THIS IN THE LOCAL ENVIRONMENT
 
+## Testing and Validation
+
+**IMPORTANT: Do NOT attempt to build or test FastDeploy locally, even for validation purposes.**
+
+When you make changes to fix build issues:
+- Commit your changes to the repository
+- The automated git-builder container will detect changes and attempt to rebuild
+- Monitor the build logs with: `docker logs git-builder`
+- Do NOT run build commands locally, including:
+  - `bash build.sh` 
+  - `docker build -f dockerfiles/Dockerfile.gpu`
+  - `python setup.py`
+  - Any compilation commands
+
+The only exception is viewing logs from the automated build system.
+
 ## Project Overview
 
 FastDeploy is an inference and deployment toolkit for Large Language Models (LLMs) and Visual Language Models (VLMs) based on PaddlePaddle. It provides production-ready deployment solutions with advanced acceleration technologies including PD disaggregation, unified KV cache transmission, and comprehensive quantization support.
