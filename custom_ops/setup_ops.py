@@ -130,12 +130,16 @@ def get_sm_version(archs):
     Get sm version of paddle.
     """
     arch_set = set(archs)
-    try:
-        prop = paddle.device.cuda.get_device_properties()
-        cc = prop.major * 10 + prop.minor
-        arch_set.add(cc)
-    except ValueError:
-        pass
+    # Skip trying to get device properties when building with stub libraries
+    # The FD_BUILDING_ARCS environment variable should contain all needed architectures
+    if os.getenv("LD_LIBRARY_PATH", "").find("/cuda/lib64/stubs") == -1:
+        try:
+            prop = paddle.device.cuda.get_device_properties()
+            cc = prop.major * 10 + prop.minor
+            arch_set.add(cc)
+        except (ValueError, OSError):
+            # OSError can occur when CUDA driver is a stub library
+            pass
     return list(arch_set)
 
 
