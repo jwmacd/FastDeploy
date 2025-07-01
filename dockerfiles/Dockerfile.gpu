@@ -50,9 +50,11 @@ RUN python -m pip install -r /tmp/requirements.txt
 # Note: The build process imports PaddlePaddle which tries to initialize CUDA and looks for libcuda.so.1
 # This library comes from the host NVIDIA driver and isn't available during Docker build
 # We use CUDA stub libraries to satisfy the linker during build time
+# Set CUDA_MODULE_LOADING to prevent CUDA initialization during import
+ENV CUDA_MODULE_LOADING=LAZY
+ENV LD_LIBRARY_PATH=/usr/local/cuda/lib64/stubs:${LD_LIBRARY_PATH}
+
 RUN ln -s /usr/local/cuda/lib64/stubs/libcuda.so /usr/local/cuda/lib64/stubs/libcuda.so.1 && \
-    export LD_LIBRARY_PATH=/usr/local/cuda/lib64/stubs:${LD_LIBRARY_PATH} && \
-    export CUDA_MODULE_LOADING=LAZY && \
     cd FastDeploy && \
     # 89 refers to SM_89 (compute capability 8.9) for the target GPUs
     bash build.sh 1 python false "[89]" && \
@@ -60,6 +62,9 @@ RUN ln -s /usr/local/cuda/lib64/stubs/libcuda.so /usr/local/cuda/lib64/stubs/lib
     rm -rf /workspace/FastDeploy/build /workspace/FastDeploy/dist && \
     # Clean up the stub symlink after build
     rm /usr/local/cuda/lib64/stubs/libcuda.so.1
+
+# Reset LD_LIBRARY_PATH to remove stub directory
+ENV LD_LIBRARY_PATH=${LD_LIBRARY_PATH#/usr/local/cuda/lib64/stubs:}
 
 # Copy entrypoint script
 COPY entrypoint.sh /workspace/entrypoint.sh
