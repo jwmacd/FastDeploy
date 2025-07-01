@@ -67,6 +67,7 @@ RUN cd /tmp && \
 # Set CUDA_MODULE_LOADING to prevent CUDA initialization during import
 ENV CUDA_MODULE_LOADING=LAZY
 ENV LD_LIBRARY_PATH=/usr/local/cuda/lib64/stubs:${LD_LIBRARY_PATH}
+ENV no_proxy=bcebos.com,paddlepaddle.org.cn,${no_proxy}
 
 RUN ln -s /usr/local/cuda/lib64/stubs/libcuda.so /usr/local/cuda/lib64/stubs/libcuda.so.1 && \
     cd FastDeploy && \
